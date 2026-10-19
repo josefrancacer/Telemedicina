@@ -1,0 +1,21 @@
+{
+  "name": "practica3telemedicina",
+  "version": "1.0.0",
+  "description": "Práctica 3 - Integración, Seguridad y Despliegue en la Nube",
+  "main": "servidor.js",
+  "scripts": {
+    "start": "node servidor.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.4",
+    "cors": "^2.8.6",
+    "dotenv": "^16.4.5",
+    "express": "^5.2.1",
+    "jwt-simple": "^0.5.6",
+    "pg": "^8.13.1",
+    "websocket": "^1.0.35"
+  }
+}
