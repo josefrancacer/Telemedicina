@@ -1,0 +1,320 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf8">
+    <title>Gestión de Recursos</title>
+    <style>
+        
+        .seccion { display: none; }
+        .activa { display: block; }
+
+        
+        body {
+            font-family: Arial, sans-serif;
+            background: #ffffff; 
+            margin: 0;
+            padding: 20px;
+        }
+
+        
+        .centerSquare {
+            background: white;
+            border: 2px solid #333; 
+            width: 60%;
+            margin: 0 auto;
+            padding: 0 0 20px 0; 
+        }
+
+        
+        h2.cabecera-app {
+            background: #b3b3b3; 
+            color: black;
+            font-weight: normal;
+            font-size: 26px;
+            text-align: center;
+            margin: 0;
+            padding: 10px;
+            border-bottom: 2px solid #333;
+        }
+
+        
+        .contenido-app {
+            padding: 0 20px;
+        }
+
+        
+        h3 {
+            text-transform: uppercase;
+            font-size: 18px;
+            text-align: left;
+            border-bottom: 1px dotted black;
+            padding-bottom: 5px;
+            margin-top: 15px;
+        }
+
+        h4 {
+            font-size: 16px;
+            text-align: left;
+            border-bottom: 1px dotted black;
+            padding-bottom: 5px;
+            margin-top: 20px;
+            margin-bottom: 15px;
+        }
+
+        
+        button {
+            padding: 4px 8px;
+            border: 1px solid #777;
+            background: #f0f0f0;
+            cursor: pointer;
+            border-radius: 2px;
+        }
+        button:hover { background: #e0e0e0; }
+
+        
+        .fila-bienvenida {
+            margin-bottom: 20px;
+            font-size: 15px;
+        }
+        .fila-bienvenida button {
+            margin-left: 10px;
+        }
+
+        
+        .formulario-busqueda div {
+            margin-bottom: 8px;
+        }
+        .formulario-busqueda label {
+            display: inline-block;
+            width: 100px;
+            text-align: right;
+            margin-right: 5px;
+            color: darkblue; 
+        }
+        .formulario-busqueda select {
+            width: 150px;
+            padding: 3px;
+        }
+        .btn-buscar {
+            margin-left: 110px;
+            margin-top: 5px;
+        }
+
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+        th, td {
+            border: 1px solid #999;
+            padding: 6px;
+            text-align: left;
+            font-size: 14px;
+        }
+        th {
+            background: #f2f2f2;
+            font-weight: bold;
+        }
+        
+        
+        .barra-inferior {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+
+        .reserva-finalizada {
+            background-color: white;
+        }
+
+        .reserva-en-uso {
+            background-color: #cfe2ff;
+        }
+
+        .reserva-excedida {
+            background-color: #f8d7da; 
+        }
+
+        .reserva-pendiente {
+            background-color: #d4edda; 
+        }
+        .input-estandar { padding: 4px; border: 1px solid #999; margin-bottom: 8px; }
+        .label-estandar { display: inline-block; width: 130px; }
+    </style>
+</head>
+
+<body>
+
+    <div id="login" class="seccion centerSquare activa">
+        <h2 class="cabecera-app">Aplicación Gestor</h2>
+        <div class="contenido-app">
+            <h3>Acceso</h3>
+            <div><label class="label-estandar">Usuario:</label> <input id="usuario" class="input-estandar" /></div> 
+            <div><label class="label-estandar">Contraseña:</label> <input type="password" id="password" class="input-estandar" /></div>
+            <br>
+            <button onclick="entrar()">Entrar</button> 
+            <button onclick="registro()">Registrarse</button>
+        </div>
+    </div> 
+    
+    <div id="registro" class="seccion centerSquare">
+        <h2 class="cabecera-app">Aplicación Gestor</h2>
+        <div class="contenido-app">
+            <h3>Mi Perfil / Registro</h3>
+            <input type="hidden" id="gestor-id">
+            <div><label class="label-estandar">Nombre:</label> <input id="gestor-nombre" class="input-estandar" /></div> 
+            <div><label class="label-estandar">Apellidos:</label> <input id="gestor-apellidos" class="input-estandar" /></div>
+            <div><label class="label-estandar">Usuario:</label> <input id="gestor-usuario" class="input-estandar" /></div> 
+            <div><label class="label-estandar">Nueva Contraseña:</label> <input type="password" id="gestor-pass" class="input-estandar" /></div>
+            <br>
+            <button onclick="guardarGestor()">Guardar Datos</button>
+            <button onclick="cambiarSeccion('login')">Volver</button>
+        </div>
+    </div>
+
+
+    <div id="seccion-listado" class="seccion centerSquare">
+        <h2 class="cabecera-app">Aplicación Gestor</h2>
+        <div class="contenido-app">
+            <h3>Inicio</h3>
+            
+            <div id="info-usuario" class="fila-bienvenida" style="display: none;">
+                Bienvenido  <span id="nombre-gestor" style="margin-left: 6px;"></span>
+                <button onclick="editarPerfil()">Editar datos</button>
+            </div>
+
+            <h4>Búsqueda de recursos</h4>
+            <div class="formulario-busqueda">
+                <div>
+                    <label>Categoría:</label> 
+                    <select id="bus-cat"><option value="o">Todos</option></select>
+                </div>
+                <div>
+                    <label>Modelo:</label> 
+                    <select id="bus-mod"><option value="0">Todos</option></select>
+                </div>
+                <div>
+                    <label>Ubicación:</label> 
+                    <select id="bus-ubi"><option value="0">Todos</option></select>
+                </div>
+                <div>
+                    <label>Estado:</label> 
+                    <select id="bus-est">
+                        <option value="all">Todos</option>
+                        <option value="0">Operativo</option>
+                        <option value="1">Baja/Defectuoso</option>
+                        <option value="2">Mantenimiento</option>
+                    </select>
+                </div>
+                <button class="btn-buscar" onclick="buscar()">Buscar</button>
+            </div>
+
+            <h4>Recursos</h4>
+            <table id="tabla-recursos">
+                <thead>
+                    <tr>
+                        <th>N. Serie</th>
+                        <th>Categoría</th>
+                        <th>Modelo</th>
+                        <th>Ubicación</th>
+                        <th>Estado</th>
+                        <th></th> </tr>
+                </thead>
+                <tbody id="cuerpo-recursos">
+                    </tbody>
+            </table>
+
+            <div>
+                <h4>Ranking de reservas por área médica</h4>
+                <button onclick="enviarReservasMinisterio()">Enviar reservas al Ministerio</button>
+                <span id="estado-envio"></span>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Área Médica</th>
+                            <th>Reservas Totales</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cuerpo-ranking"></tbody>
+                </table>
+            </div>
+
+            <div class="barra-inferior">
+                <button onclick="abrirFichaNuevo()">Añadir Recurso</button>
+                <button onclick="salir()">Salir</button>
+            </div>
+        </div>
+            <h3>Panel de Avisos en Tiempo Real</h3>
+            <table class="tabla-estandar">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Origen</th>
+                        <th>Aviso</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-avisos">
+                    </tbody>
+            </table>       
+    </div>
+
+    <div id="seccion-ficha" class="seccion centerSquare">
+        <h2 class="cabecera-app">Aplicación Gestor</h2>
+        <div class="contenido-app">
+            <h3>Ficha de Recurso</h3>
+            <div class="formulario">
+                <input type="hidden" id="recurso-id"> 
+                <div><label class="label-estandar">Categoría:</label> <select id="f-cat" class="input-estandar" onchange="actualizarModelosFicha()"></select></div>
+                <div><label class="label-estandar">Modelo:</label> <select id="f-mod" class="input-estandar"></select></div>
+                <div><label class="label-estandar">Núm. Serie:</label> <input type="text" id="f-sn" class="input-estandar"></div>
+                <div><label class="label-estandar">Ubicación:</label> <select id="f-ubi" class="input-estandar"></select></div>
+                <div><label class="label-estandar">Estado:</label> 
+                    <select id="f-est" class="input-estandar">
+                        <option value="0">Operativo</option>
+                        <option value="1">Baja/Defectuoso</option>
+                        <option value="2">Mantenimiento</option>
+                    </select>
+                </div>
+                <br>
+                <button onclick="guardarRecurso()">Guardar Recurso</button>
+                <button onclick="volverAListado()">Volver al Listado</button>
+            </div>
+
+            <h4>Reservas</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Sanitario</th>
+                        <th>H. estim.</th>
+                        <th>F. Petición</th>
+                        <th>F. Inicio</th>
+                        <th>F. Fin</th>
+                    </tr>
+                </thead>
+                <tbody id="cuerpo-reservas"></tbody>
+            </table>
+            <h4>Reseñas</h4>
+            <table id="tabla-resenyas">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Sanitario</th>
+                        <th>Valoración</th>
+                        <th>Comentario</th>
+                    </tr>
+                </thead>
+                <tbody id="cuerpo-resenyas"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- [P3-1] NUEVO: ranking de reservas por área médica (Ministerio) -->
+
+
+    <script src="rest.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>
