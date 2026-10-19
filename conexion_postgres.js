@@ -8,7 +8,7 @@ var pg = require("pg");
 // Se lee de la variable de entorno DATABASE_URL (en Render: Environment).
 // Si no existe, se usa la que pongas aquí abajo (cambia [YOUR-PASSWORD]).
 var urlBD = process.env.DATABASE_URL ||
-    "postgresql://postgres.gngwhrjvgydqqdnxyygd:[YOUR-PASSWORD]@aws-0-eu-west-1.pooler.supabase.com:5432/postgres";
+    "postgresql://postgres.gngwhrjvgydqqdnxyygd:telemedicina2026@aws-0-eu-west-1.pooler.supabase.com:5432/postgres";
 
 // Pool = conjunto de conexiones que se reutilizan entre peticiones
 var conexion = new pg.Pool({
