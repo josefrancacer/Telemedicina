@@ -446,7 +446,6 @@ function borrarRecurso(id) {
         }
     });
 }
-
 // ==========================================================================
 // [P3-1] NUEVO: API DEL MINISTERIO DE SANIDAD (llamadas desde el cliente)
 // --------------------------------------------------------------------------
@@ -481,7 +480,6 @@ var AREAS_MEDICAS = {
 function pedir(url) {
     return new Promise(function (resolve, reject) {
         rest.get(conToken(url), function (status, respuesta) {   // [P3-2] con el token
-            if (sesionCaducada(status)) return reject(new Error("Sesión caducada"));
             if (status == 200) resolve(respuesta);
             else reject(new Error("Error " + status + " en " + url));
         });
@@ -544,7 +542,6 @@ function recopilarReservas() {
 // Botón "Enviar reservas al Ministerio"
 function enviarReservasMinisterio() {
     var estado = document.getElementById("estado-envio");
-    if (!token) { alert("Tienes que iniciar sesión"); return; }   // [P3-2]
     estado.textContent = " Enviando...";
 
     recopilarReservas()
@@ -590,41 +587,72 @@ function enviarReservasMinisterio() {
 //   - "fecha_fin" o "fec_fin"
 //   - mayúsculas / espacios distintos en los textos
 //   - fechas con hora o sin hora ("2026-03-22" y "2026-03-22T10:00:00Z")
+//   - la misma reserva enviada en distintos estados (pendiente, en uso, finalizada)
 //   - áreas que no existen (p. ej. id_area 911) o envíos sin array de datos
 function contarPorArea(envios) {
     var reservasPorArea = {};   // id_area -> Set de claves de reserva
 
-    // Texto en minúsculas y sin espacios sobrantes
-    var limpiar = function (valor) {
-        return valor == null ? "" : String(valor).trim().toLowerCase();
-    };
-    // Nos quedamos solo con la parte de la fecha (YYYY-MM-DD)
-    var soloFecha = function (valor) {
-        return valor ? String(valor).substring(0, 10) : "";
-    };
+    // ---- GESTIÓN DE NULOS Y VALORES VACÍOS ----
+    // Cada grupo manda los "vacíos" de una forma distinta: null, undefined,
+    // "", "   ", "null", "undefined" o la fecha cero de MySQL "0000-00-00".
+    // esVacio() los trata todos igual.
+    function esVacio(valor) {
+        if (valor === null || valor === undefined) return true;
+        var texto = String(valor).trim().toLowerCase();
+        return texto === "" || texto === "null" || texto === "undefined" ||
+               texto === "nan" || texto.indexOf("0000-00-00") === 0;
+    }
+
+    // Texto en minúsculas y sin espacios sobrantes ("" si está vacío)
+    function limpiar(valor) {
+        return esVacio(valor) ? "" : String(valor).trim().toLowerCase();
+    }
+
+    // Fecha -> "YYYY-MM-DD" ("" si está vacía). Admite los formatos que llegan:
+    //   "2026-03-22", "2026-03-22 10:00:00", "2026-03-22T10:00:00.000Z"
+    //   y "22/03/26 10:00:00" (día/mes/año)
+    function soloFecha(valor) {
+        if (esVacio(valor)) return "";
+        var texto = String(valor).trim();
+        var dma = texto.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);   // dd/mm/aa o dd/mm/aaaa
+        if (dma) {
+            var anyo = dma[3].length == 2 ? "20" + dma[3] : dma[3];
+            return anyo + "-" + dma[2].padStart(2, "0") + "-" + dma[1].padStart(2, "0");
+        }
+        return texto.substring(0, 10);
+    }
 
     if (!Array.isArray(envios)) return {};
 
     envios.forEach(function (envio) {
+        if (!envio) return;
         var area = Number(envio.id_area);
-        if (!AREAS_MEDICAS[area]) return;            // área desconocida -> se ignora
-        if (!Array.isArray(envio.datos)) return;     // envío mal formado -> se ignora
-
-        if (!reservasPorArea[area]) reservasPorArea[area] = new Set();
+        if (!AREAS_MEDICAS[area]) return;            // área nula o desconocida -> se ignora
+        if (!Array.isArray(envio.datos)) return;     // envío sin array de datos -> se ignora
 
         envio.datos.forEach(function (r) {
-            if (!r || typeof r !== "object") return;
+            if (!r || typeof r !== "object") return; // registro nulo o que no es un objeto
 
-            var clave = [
-                limpiar(r.nombre),
-                limpiar(r.apellidos),
-                limpiar(r["categoría"] != null ? r["categoría"] : r.categoria),
-                limpiar(r.horas_estimadas),
-                soloFecha(r.fec_pet),
-                soloFecha(r.fec_ini),
-                soloFecha(r.fecha_fin != null ? r.fecha_fin : r.fec_fin)
-            ].join("|");
+            var nombre    = limpiar(r.nombre);
+            var apellidos = limpiar(r.apellidos);
+            var categoria = limpiar(r["categoría"] != null ? r["categoría"] : r.categoria);
+            var horas     = limpiar(r.horas_estimadas);
+            var fechaPet  = soloFecha(r.fec_pet);
 
+            // Campos OBLIGATORIOS: si falta cualquiera, el registro no es una
+            // reserva válida y se DESCARTA (no se cuenta).
+            // fec_ini y fecha_fin NO son obligatorios: son null con normalidad
+            // cuando la reserva está pendiente o en uso.
+            if (nombre === "" || apellidos === "" || categoria === "" ||
+                horas === "" || fechaPet === "") {
+                return;
+            }
+
+            // La clave solo usa datos que no cambian durante la vida de la
+            // reserva (por eso tampoco lleva fec_ini ni fecha_fin).
+            var clave = [nombre, apellidos, categoria, horas, fechaPet].join("|");
+
+            if (!reservasPorArea[area]) reservasPorArea[area] = new Set();
             reservasPorArea[area].add(clave);        // si ya estaba, no se añade otra vez
         });
     });
