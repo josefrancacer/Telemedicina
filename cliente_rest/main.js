@@ -608,18 +608,29 @@ function contarPorArea(envios) {
         return esVacio(valor) ? "" : String(valor).trim().toLowerCase();
     }
 
-    // Fecha -> "YYYY-MM-DD" ("" si está vacía). Admite los formatos que llegan:
+    // CAMBIO: antes soloFecha() se quedaba solo con el día ("YYYY-MM-DD").
+    // Ahora se guarda la fecha CON HORA, porque un sanitario puede pedir el
+    // mismo recurso varias veces el mismo día y son reservas distintas.
+    // Todos los formatos se pasan a uno común con new Date(...).toISOString(),
+    // así "2026-03-22T09:00:00.000Z" y "2026-03-22 11:00:00" (hora de Madrid)
+    // dan el mismo resultado si son el mismo instante.
     //   "2026-03-22", "2026-03-22 10:00:00", "2026-03-22T10:00:00.000Z"
     //   y "22/03/26 10:00:00" (día/mes/año)
-    function soloFecha(valor) {
+    function normalizarFecha(valor) {
         if (esVacio(valor)) return "";
         var texto = String(valor).trim();
-        var dma = texto.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);   // dd/mm/aa o dd/mm/aaaa
+
+        // dd/mm/aa hh:mm:ss  ->  aaaa-mm-ddThh:mm:ss
+        var dma = texto.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})(?:[ T](.*))?$/);
         if (dma) {
             var anyo = dma[3].length == 2 ? "20" + dma[3] : dma[3];
-            return anyo + "-" + dma[2].padStart(2, "0") + "-" + dma[1].padStart(2, "0");
+            texto = anyo + "-" + dma[2].padStart(2, "0") + "-" + dma[1].padStart(2, "0") +
+                    (dma[4] ? "T" + dma[4] : "");
         }
-        return texto.substring(0, 10);
+
+        var fecha = new Date(texto.replace(" ", "T"));
+        if (isNaN(fecha.getTime())) return texto;   // formato desconocido: se usa tal cual
+        return fecha.toISOString();
     }
 
     if (!Array.isArray(envios)) return {};
@@ -637,7 +648,7 @@ function contarPorArea(envios) {
             var apellidos = limpiar(r.apellidos);
             var categoria = limpiar(r["categoría"] != null ? r["categoría"] : r.categoria);
             var horas     = limpiar(r.horas_estimadas);
-            var fechaPet  = soloFecha(r.fec_pet);
+            var fechaPet  = normalizarFecha(r.fec_pet);   // CAMBIO: antes soloFecha(r.fec_pet)
 
             // Campos OBLIGATORIOS: si falta cualquiera, el registro no es una
             // reserva válida y se DESCARTA (no se cuenta).
